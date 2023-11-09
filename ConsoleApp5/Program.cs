@@ -34,16 +34,28 @@ namespace ConsoleApp29
     }
     class Core : RenderWindow
     {
+        float[] distances;
+        Point[] points;
+
         float Fovwid;
         double Rprrl;
         RenderWindow Window;
+
+        //Windows Size
         private int Widthpic;
         private int Heightpic;
         private int Widthpic02;
         private int Heightpic02;
         private int Widthpic04;
         private int Heightpic04;
+
+        //rend pl
         CircleShape pl;
+
+        //texture
+        Image texture = new Image("test.jpg");
+        uint textureScale;
+        Sprite[] sprites;
         public Core() : base(new VideoMode(1920, 1080), "lol", Styles.Close)
         {
             Window = this;
@@ -53,7 +65,7 @@ namespace ConsoleApp29
             Heightpic02 = Heightpic / 2;
             Widthpic04 = Widthpic / 4;
             Heightpic04 = Heightpic / 4;
-            Fovwid = (float)Player.FOV / Widthpic02;
+            Fovwid = (float)Player.FOV / Widthpic;
             Rprrl = (Widthpic02 / 2) / Math.Tan(Math.PI * Player.FOV / 360);
             Window.Closed += Window_Closed;
             Window.KeyPressed += Window_KeyPressed;
@@ -64,10 +76,20 @@ namespace ConsoleApp29
             pl = new CircleShape();
             pl.FillColor = Color.White;
             pl.Radius = 10;
-            distances = new float[Widthpic02];
-            points = new Point[Widthpic02];
+            distances = new float[Widthpic];
+            points = new Point[Widthpic];
             Window.SetVerticalSyncEnabled(true);
-            first = Widthpic02;
+            textureScale = texture.Size.X;
+            sprites = new Sprite[textureScale];
+            for (uint i = 0; i < sprites.Length; i++)
+            {
+                Image spr = new Image(1, textureScale);
+                for (uint j = 0; j < textureScale; j++)
+                {
+                    spr.SetPixel(1, j, texture.GetPixel(i, j));
+                }
+                sprites[i] = new Sprite(new Texture(spr));
+            }
         }
 
         private void Window_GainedFocus(object? sender, EventArgs e)
@@ -83,7 +105,7 @@ namespace ConsoleApp29
         int first;
         private void Window_MouseMoved(object? sender, MouseMoveEventArgs e)
         {
-            Player.POV -= (e.X - first + Window.Position.X + 8) * 0.1f;
+            Player.POV -= (e.X - Widthpic02 + Window.Position.X + 8) * 0.1f;
             Mouse.SetPosition(new Vector2i(Widthpic02, Heightpic02));
         }
 
@@ -109,8 +131,7 @@ namespace ConsoleApp29
         {
             Window.Close();
         }
-        float[] distances;
-        Point[] points;
+
         (float[] distances, Point[] points) Renddis(float pov, int fov, int NOR)
         {
             float angle = pov + fov / 2;
@@ -132,28 +153,31 @@ namespace ConsoleApp29
                 Window.DispatchEvents();
                 Window.Clear();
                 Window.SetTitle($"X: {Player.cords.X} Y: {Player.cords.Y}");
-                var cort = Renddis(Player.POV, Player.FOV, Widthpic02);
+                var cort = Renddis(Player.POV, Player.FOV, Widthpic);
                 distances = cort.distances; points = cort.points;
-                pl.Position = new Vector2f(Player.cords.X * 50 + Widthpic04 - 10, Player.cords.Y * 50 + Heightpic04 - 10);
-                for (int i = 0; i < Word.Segments.Length; i++)
+                pl.Position = new Vector2f(Player.cords.X * 50, Player.cords.Y * 50);
+                for (int i = 0; i < Widthpic; i++)
                 {
-                    Window.Draw(new Vertex[] { new Vertex(new Vector2f(Word.Segments[i].PointA.X * 50 + Widthpic04, Word.Segments[i].PointA.Y * 50 + Heightpic04), Color.White),
-                                               new Vertex(new Vector2f(Word.Segments[i].PointB.X * 50 + Widthpic04, Word.Segments[i].PointB.Y * 50 + Heightpic04), Color.White) }, PrimitiveType.Lines);
-                }
-                for (int i = 0; i < Widthpic02; i++)
-                {
-                    double H = 1 / (double)distances[i] * Rprrl;
-                    if (H > Heightpic)
-                    {
-                        H = Heightpic;
-                    }
-                    Window.Draw(new Vertex[] { new Vertex(new Vector2f(Widthpic02 +i, (float)(Heightpic02 - H / 2)), new Color((byte)(points[i].X * 10),(byte)(points[i].Y * 10),0)),
-                                           new Vertex(new Vector2f(Widthpic02 +i, (float)((Heightpic02- H / 2) + H)), new Color((byte)(points[i].X * 10),(byte)(points[i].Y * 10),0)) }, PrimitiveType.Lines);
+
                     if (points[i] != null && distances[i] < 10000)
                     {
+                        double H = 1 / (double)distances[i] * Rprrl;
+                        if (H > Heightpic)
+                        {
+                            H = Heightpic;
+                        }
+                        int num = (int)(points[i].X * textureScale + points[i].Y * textureScale) % (int)textureScale;
+                        sprites[num].Scale = new Vector2f(1, (float)H / Heightpic);
+                        sprites[num].Position = new Vector2f(i, Heightpic02 - sprites[num].Scale.Y * Heightpic02);
+                        Window.Draw(sprites[num]);
                         Window.Draw(new Vertex[] { new Vertex(new Vector2f(pl.Position.X + 10, pl.Position.Y + 10), new Color((byte)(points[i].X * 10),(byte)(points[i].Y * 10),0)),
-                                               new Vertex(new Vector2f(points[i].X * 50+ Widthpic04, points[i].Y * 50+ Heightpic04), new Color((byte)(points[i].X * 10),(byte)(points[i].Y * 10),0)) }, PrimitiveType.Lines);
+                                               new Vertex(new Vector2f(points[i].X * 50+ 10, points[i].Y * 50+ 10), new Color((byte)(points[i].X * 10),(byte)(points[i].Y * 10),0)) }, PrimitiveType.Lines);
                     }
+                }
+                for (int i = 0; i < Word.Segments.Length; i++)
+                {
+                    Window.Draw(new Vertex[] { new Vertex(new Vector2f(Word.Segments[i].PointA.X * 50 + 10, Word.Segments[i].PointA.Y * 50 + 10), Color.White),
+                                               new Vertex(new Vector2f(Word.Segments[i].PointB.X * 50 + 10, Word.Segments[i].PointB.Y * 50 + 10), Color.White) }, PrimitiveType.Lines);
                 }
                 Window.Draw(pl);
                 Window.Draw(new Vertex[] { new Vertex(new Vector2f(pl.Position.X + 10, pl.Position.Y + 10), Color.White),
@@ -164,13 +188,12 @@ namespace ConsoleApp29
     }
     static class Player
     {
-        public const int FOV = 90;
+        public const int FOV = 120;
         static public Point cords = new Point();
         static public float POV;
     }
     class Ray
     {
-
         int ang;
         public Point Intersection_point;
         const float beam_length = 50;
@@ -206,12 +229,23 @@ namespace ConsoleApp29
                 intersection_point[i].X = LineB.PointA.X + (LineB.PointB.X - LineB.PointA.X) * n;  // x3 + (-b(x))*n
                 intersection_point[i].Y = LineB.PointA.Y + (LineB.PointB.Y - LineB.PointA.Y) * n;  // y3 +(-b(y))*n
                 Line_segment C = new Line_segment(Player.cords, new Point(intersection_point[i].X, intersection_point[i].Y));
-                if (
-                    ((0 <= (intersection_point[i].X - LineA.PointA.X) * (LineA.PointB.X - intersection_point[i].X)) && ((intersection_point[i].X - LineA.PointA.X) * (LineA.PointB.X - intersection_point[i].X) <= (LineA.PointA.X - LineA.PointB.X) * (LineA.PointA.X - LineA.PointB.X)))
-                 && ((0 <= (intersection_point[i].Y - LineA.PointA.Y) * (LineA.PointB.Y - intersection_point[i].Y)) && ((intersection_point[i].Y - LineA.PointA.Y) * (LineA.PointB.Y - intersection_point[i].Y) <= (LineA.PointA.Y - LineA.PointB.Y) * (LineA.PointA.Y - LineA.PointB.Y)))
+                float x1 = intersection_point[i].X;
+                float y1 = intersection_point[i].Y;
+                float xa1 = LineA.PointA.X;
+                float xa2 = LineA.PointB.X;
+                float ya1 = LineA.PointA.Y;
+                float ya2 = LineA.PointB.Y;
+                float xb1 = LineB.PointA.X;
+                float xb2 = LineB.PointB.X;
+                float yb1 = LineB.PointA.Y;
+                float yb2 = LineB.PointB.Y;
 
-                 && ((0 <= (intersection_point[i].X - LineB.PointA.X) * (LineB.PointB.X - intersection_point[i].X)) && ((intersection_point[i].X - LineB.PointA.X) * (LineB.PointB.X - intersection_point[i].X) <= (LineB.PointA.X - LineB.PointB.X) * (LineB.PointA.X - LineB.PointB.X)))
-                 && ((0 <= (intersection_point[i].Y - LineB.PointA.Y) * (LineB.PointB.Y - intersection_point[i].Y)) && ((intersection_point[i].Y - LineB.PointA.Y) * (LineB.PointB.Y - intersection_point[i].Y) <= (LineB.PointA.Y - LineB.PointB.Y) * (LineB.PointA.Y - LineB.PointB.Y))))
+                bool condition = (IsWithinRange(x1, xa1, xa2) &&
+                  IsWithinRange(y1, ya1, ya2) &&
+                  IsWithinRange(x1, xb1, xb2) &&
+                  IsWithinRange(y1, yb1, yb2));
+
+                if (condition)
                     LTPs[i] = (float)Math.Sqrt(((C.PointB.X - C.PointA.X) * (C.PointB.X - C.PointA.X)) + ((C.PointB.Y - C.PointA.Y) * (C.PointB.Y - C.PointA.Y)));
                 else
                     LTPs[i] = 10000;
@@ -229,6 +263,13 @@ namespace ConsoleApp29
             }
             LTP = best;
             Intersection_point = intersection_point[Bestid];
+        }
+        bool IsWithinRange(float value, float rangeStart, float rangeEnd)
+        {
+            float minValue = Math.Min(rangeStart, rangeEnd);
+            float maxValue = Math.Max(rangeStart, rangeEnd);
+            float product = (float)Math.Round((value - rangeStart) * (rangeEnd - value), 10);
+            return (0 <= product) && (product <= (maxValue - minValue) * (maxValue - minValue));
         }
     }
     class Point
