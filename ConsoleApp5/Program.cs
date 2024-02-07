@@ -114,12 +114,12 @@ namespace ConsoleApp29
             switch (e.Code)
             {
                 case Keyboard.Key.W:
-                    Player.cords.X += SinCos.Cos[Ray.CorrectAngle((int)Math.Round(Player.POV))] * 0.05f;
-                    Player.cords.Y += SinCos.Sin[Ray.CorrectAngle((int)Math.Round(Player.POV))] * 0.05f;
+                    Player.cords.X += (float)Math.Cos(Ray.CorrectAngle((int)Math.Round(Player.POV)) * Math.PI / 180) * 0.05f;
+                    Player.cords.Y += (float)Math.Sin(Ray.CorrectAngle((int)Math.Round(Player.POV)) * Math.PI / 180) * 0.05f;
                     break;
                 case Keyboard.Key.S:
-                    Player.cords.X -= SinCos.Cos[Ray.CorrectAngle((int)Math.Round(Player.POV))] * 0.05f;
-                    Player.cords.Y -= SinCos.Sin[Ray.CorrectAngle((int)Math.Round(Player.POV))] * 0.05f;
+                    Player.cords.X -= (float)Math.Cos(Ray.CorrectAngle((int)Math.Round(Player.POV)) * Math.PI / 180) * 0.05f;
+                    Player.cords.Y -= (float)Math.Sin(Ray.CorrectAngle((int)Math.Round(Player.POV)) * Math.PI / 180) * 0.05f;
                     break;
                 case Keyboard.Key.Escape:
                     Window.Close();
@@ -139,7 +139,7 @@ namespace ConsoleApp29
             Point[] points = new Point[NOR];
             for (int i = 0; i < NOR; i++)
             {
-                Ray ray = new Ray((int)Math.Round(angle));
+                Ray ray = new Ray(angle);
                 distances[i] = ray.LTP;
                 points[i] = ray.Intersection_point;
                 angle -= Fovwid;
@@ -181,7 +181,7 @@ namespace ConsoleApp29
                 }
                 Window.Draw(pl);
                 Window.Draw(new Vertex[] { new Vertex(new Vector2f(pl.Position.X + 10, pl.Position.Y + 10), Color.White),
-                                           new Vertex(new Vector2f(SinCos.Cos[Ray.CorrectAngle((int)Math.Round(Player.POV))] * 100 + pl.Position.X + 10, SinCos.Sin[Ray.CorrectAngle((int)Math.Round(Player.POV))] * 100 +  pl.Position.Y + 10), Color.White) }, PrimitiveType.Lines);
+                                           new Vertex(new Vector2f((float)Math.Cos(Ray.CorrectAngle((int)Math.Round(Player.POV)) * Math.PI / 180) * 100 + pl.Position.X + 10, (float)Math.Sin(Ray.CorrectAngle((int)Math.Round(Player.POV)) * Math.PI / 180) * 100 +  pl.Position.Y + 10), Color.White) }, PrimitiveType.Lines);
                 Window.Display();
             }
         }
@@ -194,19 +194,19 @@ namespace ConsoleApp29
     }
     class Ray
     {
-        int ang;
+        float ang;
         public Point Intersection_point;
         const float beam_length = 50;
         public float LTP;
-        int Angle { get { return ang; } set { ang = CorrectAngle(value); } }
-        public static int CorrectAngle(int ang)
+        float Angle { get { return ang; } set { ang = CorrectAngle(value); } }
+        public static float CorrectAngle(float ang)
         {
-            int limited_angle = ang % 360;
+            float limited_angle = ang % 360;
             if (limited_angle < 0)
                 limited_angle += 360;
             return limited_angle;
         }
-        public Ray(int ang)
+        public Ray(float ang)
         {
             Angle = ang;
             float[] LTPs = new float[Word.Segments.Length];
@@ -214,7 +214,7 @@ namespace ConsoleApp29
             for (int i = 0; i < Word.Segments.Length; i++)
             {
                 Line_segment LineA = Word.Segments[i];
-                Line_segment LineB = new Line_segment(Player.cords, new Point(SinCos.Cos[Angle] * beam_length + Player.cords.X, SinCos.Sin[Angle] * beam_length + Player.cords.Y));
+                Line_segment LineB = new Line_segment(Player.cords, new Point((float)Math.Cos(Angle * Math.PI / 180) * beam_length + Player.cords.X, (float)Math.Sin(Angle * Math.PI / 180) * beam_length + Player.cords.Y));
                 float n;
                 if (LineA.PointB.Y - LineA.PointA.Y != 0)
                 {  // a(y)
@@ -317,25 +317,6 @@ namespace ConsoleApp29
             {
                 list_segments.Add(item);
             }
-        }
-    }
-    static class SinCos
-    {
-        static public float[] Sin = SinF();
-        static public float[] Cos = CosF();
-        static float[] SinF()
-        {
-            float[] sin = new float[360];
-            for (int i = 0; i < 360; i++)
-                sin[i] = (float)Math.Sin(i * Math.PI / 180);
-            return sin;
-        }
-        static float[] CosF()
-        {
-            float[] cos = new float[360];
-            for (int i = 0; i < 360; i++)
-                cos[i] = (float)Math.Cos(i * Math.PI / 180);
-            return cos;
         }
     }
 }
